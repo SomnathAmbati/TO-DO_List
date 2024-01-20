@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #todo-container {
+            width: 400px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        #todo-header {
+            background-color: #3498db;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-bottom: 2px solid #2980b9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        .task-actions button {
+            padding: 8px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            margin-right: 5px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .edit-btn {
+            background-color: #3498db;
+            color: #fff;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+
+        .complete-btn {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .completed {
+            background-color: #d4edda !important;
+            color: #155724;
+            text-decoration: line-through;
+        }
+
+        .task:hover {
+            background-color: #f8f9fa;
+        }
+
+        .edit-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        #add-task-btn {
+            background-color: #ddd;
+            border: none;
+            border-radius: 4px;
+            padding: 5px;
+            color: #151414;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s;
+            margin-left: 7%;
+        }
+
+        #add-task-btn:hover,
+        .task-actions button:hover {
+            background-color: #bdc3c7;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="todo-container">
+        <div id="todo-header">
+            <h2>To-Do List</h2>
+        </div>
+        <table id="todo-list">
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div class="task" id="task-input-container">
+            <input type="text" id="task-input" placeholder="Add a new task">
+            <button id="add-task-btn">ADD</button>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const todoList = document.querySelector("#todo-list tbody");
+        const taskInput = document.getElementById("task-input");
+        const addTaskBtn = document.getElementById("add-task-btn");
+        const taskTemplate = document.getElementById("task-template");
+
+        // Load tasks from local storage
+        const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+        // Function to render tasks
+        function renderTasks() {
+            todoList.innerHTML = "";
+            tasks.forEach(task => renderTask(task));
+        }
+
+        // Function to render a single task
+        function renderTask(task) {
+            const newRow = todoList.insertRow();
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+
+            const taskContent = document.createElement("div");
+            const actionsDiv = document.createElement("div");
+            actionsDiv.classList.add("task-actions");
+
+            const editInput = document.createElement("input");
+            editInput.classList.add("edit-input");
+            editInput.style.display = "none";
+            editInput.value = task.text;
+
+            const editButton = document.createElement("button");
+            editButton.classList.add("edit-btn");
+            editButton.innerText = "Edit";
+            editButton.addEventListener("click", () => toggleEdit(task.id, taskContent, editInput));
+
+            const deleteButton = document.createElement("button");
+            deleteButton.classList.add("delete-btn");
+            deleteButton.innerText = "Delete";
+            deleteButton.addEventListener("click", () => deleteTask(task.id));
+
+            const completeButton = document.createElement("button");
+            completeButton.classList.add("complete-btn");
+            completeButton.innerText = task.completed ? "Completed" : "Complete";
+            completeButton.addEventListener("click", () => toggleComplete(task.id, completeButton));
+
+            actionsDiv.appendChild(editButton);
+            actionsDiv.appendChild(deleteButton);
+            actionsDiv.appendChild(completeButton);
+
+            taskContent.innerText = task.text;
+
+            cell1.appendChild(taskContent);
+            cell1.appendChild(editInput);
+
+            cell2.appendChild(actionsDiv);
+
+            if (task.completed) {
+                newRow.classList.add("completed");
+            }
+        }
+
+        // Function to add a new task
+        function addTask() {
+            const text = taskInput.value.trim();
+            if (text === "") return;
+
+            const newTask = {
+                id: Date.now(),
+                text,
+                completed: false,
+            };
+
+            tasks.push(newTask);
+            saveTasks();
+            renderTask(newTask);
+            taskInput.value = "";
+        }
+
+        // Function to toggle between edit mode and view mode
+        function toggleEdit(id, taskContent, editInput) {
+            const index = tasks.findIndex(task => task.id === id);
+
+            taskContent.style.display = "none";
+            editInput.style.display = "block";
+
+            editInput.focus();
+
+            editInput.addEventListener("blur", () => {
+                tasks[index].text = editInput.value;
+                saveTasks();
+                renderTasks();
+            });
+        }
+
+        // Function to delete a task
+        function deleteTask(id) {
+            const index = tasks.findIndex(task => task.id === id);
+            tasks.splice(index, 1);
+            saveTasks();
+            renderTasks();
+        }
+
+        // Function to mark a task as complete or uncomplete
+        function toggleComplete(id, completeButton) {
+            const index = tasks.findIndex(task => task.id === id);
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks();
+            renderTasks();
+        }
+
+        // Function to save tasks to local storage
+        function saveTasks() {
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+        }
+
+        // Add event listeners
+        addTaskBtn.addEventListener("click", addTask);
+
+        // Initial rendering of tasks
+        renderTasks();
+    });
+</script>
+
+</body>
+</html>
