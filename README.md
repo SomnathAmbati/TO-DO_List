@@ -1,4 +1,4 @@
-TO-DO List dedines - 
+TO-DO List defines - 
 1. Functionality: Users should be able to:
    - Add new tasks.
    - Edit existing tasks.
